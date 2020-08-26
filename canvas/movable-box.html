@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moveable Box ~ Canvas ~ Code Doodle</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100vw;
+            height: 100vh;
+        }
+    </style>
+    <script type="module">
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const resize = () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        };
+        window.addEventListener('resize', resize);
+        resize();
+
+        const currentlyHeldKeys = new Set();
+        window.addEventListener('keydown', (e) => currentlyHeldKeys.add(e.key));
+        window.addEventListener('keyup', (e) => currentlyHeldKeys.delete(e.key));
+        const isKeyDown = (...keys) => keys.some(key => currentlyHeldKeys.has(key));
+
+        let delta;
+
+        const state = {
+            player: {
+                x: 0.5,
+                y: 0.5,
+                size: 0.1,
+                speed: 0.001,
+            },
+        };
+
+        const update = () => {
+            movePlayer();
+            wrapPlayer();
+        };
+
+        const movePlayer = () => {
+            const { x, y, speed } = state.player;
+            let nextX = x, nextY = y;
+
+            if (isKeyDown('w', 'ArrowUp')) nextY -= speed;
+            if (isKeyDown('a', 'ArrowLeft')) nextX -= speed;
+            if (isKeyDown('s', 'ArrowDown')) nextY += speed;
+            if (isKeyDown('d', 'ArrowRight')) nextX += speed;
+
+            // Normalize diagonals
+            state.player.x = x + delta * (nextX - x);
+            state.player.y = y + delta * (nextY - y);
+        };
+
+        const wrapPlayer = () => {
+            if (state.player.x < 0) state.player.x += 1;
+            else if (state.player.x > 1) state.player.x -= 1;
+
+            if (state.player.y < 0) state.player.y += 1;
+            else if (state.player.y > 1) state.player.y -= 1;
+        };
+
+        const draw = () => {
+            clearCanvas();
+            drawPlayer();
+        };
+
+        const drawPlayer = ({ x, y, size } = state.player) => 
+            drawRectangle({
+                color: 'red',
+                x: (x * canvas.width ) - (size * canvas.width ) / 2,
+                y: (y * canvas.height) - (size * canvas.height) / 2,
+                width : size * canvas.width,
+                height: size * canvas.height,
+            });
+
+        const clearCanvas = () => 
+            drawRectangle({ 
+                color: 'black', 
+                x: 0, y: 0, 
+                width: canvas.width, 
+                height: canvas.height,
+            });
+
+        const drawRectangle = ({color, x, y, width, height}) => {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        };
+
+        let previousTime = null;
+
+        const loop = (timestamp) => {
+            delta = timestamp - (previousTime ?? timestamp);
+            previousTime = timestamp;
+
+            update();
+            draw();
+
+            requestAnimationFrame(loop);
+        };
+        requestAnimationFrame(loop);
+    </script>
+</head>
+
+<body>
+    <canvas></canvas>
+</body>
+
+</html>
